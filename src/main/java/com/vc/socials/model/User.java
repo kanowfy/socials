@@ -76,4 +76,51 @@ public class User {
         this.password = password;
     }
 
+    public List<Friendship> getOutgoingFriendships() {
+        return outgoingFriendships;
+    }
+
+    public void setOutgoingFriendships(List<Friendship> outgoingFriendships) {
+        this.outgoingFriendships = outgoingFriendships;
+    }
+
+    public List<Friendship> getIncomingFriendships() {
+        return incomingFriendships;
+    }
+
+    public void setIncomingFriendships(List<Friendship> incomingFriendships) {
+        this.incomingFriendships = incomingFriendships;
+    }
+
+    public List<Post> getPosts() {
+        return posts;
+    }
+
+    public void setPosts(List<Post> posts) {
+        this.posts = posts;
+    }
+
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<Comment> comments) {
+        this.comments = comments;
+    }
+
+    public List<Notification> getReceivedNotifications() {
+        return receivedNotifications;
+    }
+
+    public void setReceivedNotifications(List<Notification> receivedNotifications) {
+        this.receivedNotifications = receivedNotifications;
+    }
+
+    public List<Notification> getSentNotifications() {
+        return sentNotifications;
+    }
+
+    public void setSentNotifications(List<Notification> sentNotifications) {
+        this.sentNotifications = sentNotifications;
+    }
 }
