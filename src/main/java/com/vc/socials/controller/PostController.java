@@ -1,15 +1,13 @@
 package com.vc.socials.controller;
 
 import com.vc.socials.dto.CommentDto;
+import com.vc.socials.dto.NotificationDto;
 import com.vc.socials.dto.PostDto;
 import com.vc.socials.model.*;
-import com.vc.socials.repository.CommentRepository;
-import com.vc.socials.repository.PostRepository;
+
 import com.vc.socials.service.*;
-import org.apache.http.HttpResponse;
-import org.apache.http.protocol.HTTP;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,15 +25,19 @@ public class PostController {
     private UserService userService;
     private CommentService commentService;
 
+    private KafkaProducerService producerService;
+
     private NotificationService notificationService;
 
     @Autowired
     public PostController(PostService postService, UserService userService,
-                          CommentService commentService, NotificationService notificationService){
+                          CommentService commentService, NotificationService notificationService,
+                          KafkaProducerService producerService){
         this.postService = postService;
         this.userService = userService;
         this.commentService = commentService;
         this.notificationService = notificationService;
+        this.producerService = producerService;
     }
 
     @GetMapping("/api/home")
@@ -83,14 +85,15 @@ public class PostController {
         comment.setUser(user.get());
         postService.addComment(comment, commentDto.getPost_id());
         commentService.saveComment(comment);
-        Notification notification = new Notification();
-        notification.setType(NotificationType.COMMENT);
-        notification.setComment(comment);
-        notification.setCreatedAt(Timestamp.from(Instant.now()));
-        notification.setUser(post.get().getUser());
-        notification.setIsRead(false);
-        notificationService.saveNotification(notification);
+        NotificationDto notification = new NotificationDto();
+        notification.setNotificationType(NotificationType.COMMENT);
+        notification.setComment_id(comment.getId());
+        notification.setCreated_at(Timestamp.from(Instant.now()));
+        notification.setUser_id(post.get().getUser().getId());
+        notification.set_read(false);
+//        notificationService.saveNotification(notification);
         //send to kafka
+        producerService.sendNotification(notification);
         return new ResponseEntity<>("Comment successfully", HttpStatus.OK);
     }
 
