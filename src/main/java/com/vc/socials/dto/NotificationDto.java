@@ -1,20 +1,21 @@
 package com.vc.socials.dto;
 
-import com.vc.socials.model.User;
+import com.vc.socials.model.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CommentDto {
-    private Long comment_id;
-    private Long post_id;
+public class NotificationDto {
+    private Long notification_id;
     private Long user_id;
-    private String content;
+    private NotificationType notificationType;
+    private Long sender_id;
+    private Long comment_id;
+    private boolean is_read;
     private Timestamp created_at;
 }

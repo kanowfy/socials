@@ -15,4 +15,5 @@ public class PostDto {
         private Long user_id;
         private String content;
         private List<CommentDto> commentDtoList;
+        private Timestamp created_at;
 }

@@ -2,15 +2,10 @@ package com.vc.socials.controller;
 
 import com.vc.socials.dto.CommentDto;
 import com.vc.socials.dto.PostDto;
-import com.vc.socials.model.Comment;
-import com.vc.socials.model.Post;
-import com.vc.socials.model.User;
+import com.vc.socials.model.*;
 import com.vc.socials.repository.CommentRepository;
 import com.vc.socials.repository.PostRepository;
-import com.vc.socials.service.CommentService;
-import com.vc.socials.service.PostService;
-import com.vc.socials.service.PostServiceImpl;
-import com.vc.socials.service.UserService;
+import com.vc.socials.service.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HTTP;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,29 +27,34 @@ public class PostController {
     private UserService userService;
     private CommentService commentService;
 
+    private NotificationService notificationService;
+
     @Autowired
     public PostController(PostService postService, UserService userService,
-                          CommentService commentService){
+                          CommentService commentService, NotificationService notificationService){
         this.postService = postService;
         this.userService = userService;
         this.commentService = commentService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/api/home")
-    public List<PostDto> getPosts(){
+    public ResponseEntity<?> getPosts(){
         List<Post> postList = postService.getPosts();
-        return post2Dto(postList);
+        List<PostDto> postDtoList = post2Dto(postList);
+        return new ResponseEntity<>(postDtoList, HttpStatus.OK);
     }
 
     @GetMapping("/api/post/{post_id}")
-    public List<PostDto> getPost(@PathVariable("post_id") Long post_id){
+    public ResponseEntity<?> getPost(@PathVariable("post_id") Long post_id){
         List<Post> postList = new ArrayList<>();
         Optional<Post> post = postService.getPostById(post_id);
         if (post.isEmpty()){
             return null;
         }
         postList.add(post.get());
-        return post2Dto(postList);
+        List<PostDto> postDtoList = post2Dto(postList);
+        return new ResponseEntity<>(postDtoList, HttpStatus.OK);
     }
 
     @PostMapping("/api/post/add")
@@ -83,6 +83,14 @@ public class PostController {
         comment.setUser(user.get());
         postService.addComment(comment, commentDto.getPost_id());
         commentService.saveComment(comment);
+        Notification notification = new Notification();
+        notification.setType(NotificationType.COMMENT);
+        notification.setComment(comment);
+        notification.setCreatedAt(Timestamp.from(Instant.now()));
+        notification.setUser(post.get().getUser());
+        notification.setIsRead(false);
+        notificationService.saveNotification(notification);
+        //send to kafka
         return new ResponseEntity<>("Comment successfully", HttpStatus.OK);
     }
 
@@ -92,10 +100,15 @@ public class PostController {
             List<CommentDto> commentDtoList = new ArrayList<>();
 
             for (Comment comment : post.getComments()){
-                commentDtoList.add(new CommentDto(comment.getPost().getId(),
-                        comment.getUser().getId(), comment.getContent()));
+                CommentDto commentDto = new CommentDto();
+                commentDto.setComment_id(comment.getId());
+                commentDto.setPost_id(comment.getPost().getId());
+                commentDto.setUser_id(comment.getUser().getId());
+                commentDto.setContent(comment.getContent());
+                commentDto.setCreated_at(comment.getCreatedAt());
+                commentDtoList.add(commentDto);
             }
-            postDtoList.add(new PostDto(post.getId(), post.getUser().getId(), post.getContent(), commentDtoList));
+            postDtoList.add(new PostDto(post.getId(), post.getUser().getId(), post.getContent(), commentDtoList, post.getCreatedAt()));
         }
         return postDtoList;
     }
