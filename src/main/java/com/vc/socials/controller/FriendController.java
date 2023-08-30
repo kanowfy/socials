@@ -1,5 +1,6 @@
 package com.vc.socials.controller;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -14,12 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.vc.socials.dto.FriendRequestDto;
 import com.vc.socials.dto.FriendResponseDto;
+import com.vc.socials.dto.FriendSearchDto;
 import com.vc.socials.dto.UserDto;
+import com.vc.socials.esmodel.FriendDoc;
 import com.vc.socials.model.Friendship;
 import com.vc.socials.model.FriendshipStatus;
 import com.vc.socials.model.User;
 import com.vc.socials.repository.FriendshipRepository;
 import com.vc.socials.repository.UserRepostitory;
+import com.vc.socials.service.FriendSearchService;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,10 +32,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class FriendController {
     private UserRepostitory userRepostitory;
     private FriendshipRepository friendshipRepository;
+    private FriendSearchService friendSearchService;
 
-    public FriendController(UserRepostitory userRepostitory, FriendshipRepository friendshipRepository) {
+    public FriendController(UserRepostitory userRepostitory, FriendshipRepository friendshipRepository,
+            FriendSearchService friendSearchService) {
         this.userRepostitory = userRepostitory;
         this.friendshipRepository = friendshipRepository;
+        this.friendSearchService = friendSearchService;
     }
 
     @GetMapping("/api/friends/hello")
@@ -109,7 +116,20 @@ public class FriendController {
         }
 
         friendshipRepository.save(f);
-        // TODO: save document to index here
+
+        // save new friend document to index
+        if (f.getStatus() == FriendshipStatus.ACCEPTED) {
+            FriendDoc friendDoc = new FriendDoc();
+            friendDoc.setUser1Id(f.getUser1().getId());
+            friendDoc.setUser2Id(f.getUser2().getId());
+            friendDoc.setUser1Fullname(f.getUser1().getFullname());
+            friendDoc.setUser2Fullname(f.getUser2().getFullname());
+            try {
+                friendSearchService.createFriendIndex(friendDoc);
+            } catch (IOException e) {
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
 
         // make response notification here
 
@@ -129,7 +149,7 @@ public class FriendController {
             if (f.getStatus() == FriendshipStatus.ACCEPTED) {
                 UserDto friend = new UserDto();
                 friend.setId(f.getUser2().getId());
-                friend.setUsername(f.getUser2().getUsername());
+                friend.setFullname(f.getUser2().getFullname());
                 friend.setEmail(f.getUser2().getEmail());
                 friends.add(friend);
             }
@@ -139,12 +159,35 @@ public class FriendController {
             if (f.getStatus() == FriendshipStatus.ACCEPTED) {
                 UserDto friend = new UserDto();
                 friend.setId(f.getUser1().getId());
-                friend.setUsername(f.getUser1().getUsername());
+                friend.setFullname(f.getUser1().getFullname());
                 friend.setEmail(f.getUser1().getEmail());
                 friends.add(friend);
             }
         }
 
-        return new ResponseEntity<List<UserDto>>(friends, HttpStatus.OK);
+        return new ResponseEntity<>(friends, HttpStatus.OK);
+    }
+
+    @GetMapping("/api/friends/search")
+    public ResponseEntity<List<UserDto>> searchForFriends(@RequestBody FriendSearchDto friendSearchDto,
+            Principal principal) {
+        User currentUser = userRepostitory.findByUsername(principal.getName()).get();
+        List<User> friends = null;
+
+        try {
+            friends = friendSearchService.searchForFriends(currentUser.getId(), friendSearchDto.getQuery());
+        } catch (IOException e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        List<UserDto> friendsReponse = new ArrayList<>();
+        for (User friend : friends) {
+            UserDto user = new UserDto();
+            user.setId(friend.getId());
+            user.setFullname(friend.getFullname());
+            user.setEmail(friend.getEmail());
+            friendsReponse.add(user);
+        }
+
+        return new ResponseEntity<>(friendsReponse, HttpStatus.OK);
     }
 }

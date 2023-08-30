@@ -35,6 +35,7 @@ public class UserController {
 
         // create user object
         User user = new User();
+        user.setFullname(signUpDto.getFullname());
         user.setUsername(signUpDto.getUsername());
         user.setEmail(signUpDto.getEmail());
         user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
