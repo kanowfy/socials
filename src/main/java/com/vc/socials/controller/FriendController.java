@@ -7,6 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.vc.socials.dto.NotificationDto;
+import com.vc.socials.model.NotificationType;
+import com.vc.socials.service.FriendshipService;
+import com.vc.socials.service.KafkaProducerService;
+import com.vc.socials.service.UserService;
+import org.aspectj.weaver.ast.Not;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,12 +32,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 public class FriendController {
-    private UserRepostitory userRepostitory;
-    private FriendshipRepository friendshipRepository;
+    private UserService userService;
+    private FriendshipService friendshipService;
 
-    public FriendController(UserRepostitory userRepostitory, FriendshipRepository friendshipRepository) {
-        this.userRepostitory = userRepostitory;
-        this.friendshipRepository = friendshipRepository;
+    private KafkaProducerService producerService;
+
+    public FriendController(UserService userService, FriendshipService friendshipService,
+                            KafkaProducerService producerService) {
+        this.userService = userService;
+        this.friendshipService = friendshipService;
+        this.producerService = producerService;
     }
 
     @GetMapping("/api/friends/hello")
@@ -41,8 +51,8 @@ public class FriendController {
 
     @PostMapping("/api/friends/request")
     public ResponseEntity<?> makeFriendRequest(@RequestBody FriendRequestDto friendRequestDto) {
-        Optional<User> user1 = userRepostitory.findById(friendRequestDto.getFromUserId());
-        Optional<User> user2 = userRepostitory.findById(friendRequestDto.getToUserId());
+        Optional<User> user1 = userService.getUserById(friendRequestDto.getFromUserId());
+        Optional<User> user2 = userService.getUserById(friendRequestDto.getToUserId());
 
         if (!user1.isPresent()) {
             return new ResponseEntity<String>(
@@ -57,7 +67,7 @@ public class FriendController {
         }
 
         // check if friendship record exists between the 2 users
-        if (friendshipRepository.findsByUsersId(friendRequestDto.getFromUserId(), friendRequestDto.getToUserId())
+        if (friendshipService.getFriendshipByUsersID(friendRequestDto.getFromUserId(), friendRequestDto.getToUserId())
                 .isPresent()) {
             return new ResponseEntity<String>("Friendship record already exists.", HttpStatus.BAD_REQUEST);
         }
@@ -67,9 +77,18 @@ public class FriendController {
         friendship.setUser2(user2.get());
         friendship.setStatus(FriendshipStatus.PENDING);
         friendship.setCreatedAt(Timestamp.from(Instant.now()));
-        Friendship savedFriendship = friendshipRepository.save(friendship);
+        Friendship savedFriendship = friendshipService.saveFriendship(friendship);
 
         // make request notification here
+        NotificationDto notification = new NotificationDto();
+        notification.setNotificationType(NotificationType.FRIEND_REQUEST);
+        notification.setUser_id(user2.get().getId());
+        notification.setSender_id(user1.get().getId());
+        notification.setCreated_at(Timestamp.from(Instant.now()));
+        notification.set_read(false);
+//        notificationService.saveNotification(notification);
+        //send to kafka
+        producerService.sendNotification(notification);
 
         return new ResponseEntity<String>("Friend request created with id %d.".formatted(savedFriendship.getId()),
                 HttpStatus.CREATED);
@@ -78,7 +97,7 @@ public class FriendController {
     @PostMapping("/api/friends/response")
     public ResponseEntity<?> respondFriendRequest(@RequestBody FriendResponseDto friendResponseDto,
             Principal principal) {
-        Optional<Friendship> friendship = friendshipRepository.findById(friendResponseDto.getFriendshipId());
+        Optional<Friendship> friendship = friendshipService.getFriendshipByID(friendResponseDto.getFriendshipId());
         // check if friendship record exists
         if (!friendship.isPresent()) {
             return new ResponseEntity<String>(
@@ -108,20 +127,33 @@ public class FriendController {
             return new ResponseEntity<String>("Invalid response.", HttpStatus.BAD_REQUEST);
         }
 
-        friendshipRepository.save(f);
+        friendshipService.saveFriendship(f);
         // TODO: save document to index here
 
         // make response notification here
+        NotificationDto notification = new NotificationDto();
+        if (response.equalsIgnoreCase(FriendshipStatus.ACCEPTED.name())) {
+            notification.setNotificationType(NotificationType.FRIEND_ACCEPTED);
+        } else {
+            notification.setNotificationType(NotificationType.FRIEND_REJECTED);
+        }
+        notification.setUser_id(f.getUser1().getId());
+        notification.setSender_id(f.getUser2().getId());
+        notification.setCreated_at(Timestamp.from(Instant.now()));
+        notification.set_read(false);
+//        notificationService.saveNotification(notification);
+        //send to kafka
+        producerService.sendNotification(notification);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @GetMapping("/api/friends/list")
     public ResponseEntity<List<UserDto>> listFriends(Principal principal) {
-        User user = userRepostitory.findByUsername(principal.getName()).get();
+        User user = userService.getUserByUserName(principal.getName()).get();
 
-        List<Friendship> outgoingFriendships = friendshipRepository.findByUser1(user);
-        List<Friendship> incomingFriendships = friendshipRepository.findByUser2(user);
+        List<Friendship> outgoingFriendships = friendshipService.getFriendshipsByUser1(user);
+        List<Friendship> incomingFriendships = friendshipService.getFriendshipsByUser2(user);
 
         List<UserDto> friends = new ArrayList<>();
 

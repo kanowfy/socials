@@ -28,16 +28,18 @@ public class PostController {
     private KafkaProducerService producerService;
 
     private NotificationService notificationService;
+    private FriendshipService friendshipService;
 
     @Autowired
     public PostController(PostService postService, UserService userService,
                           CommentService commentService, NotificationService notificationService,
-                          KafkaProducerService producerService){
+                          KafkaProducerService producerService, FriendshipService friendshipService){
         this.postService = postService;
         this.userService = userService;
         this.commentService = commentService;
         this.notificationService = notificationService;
         this.producerService = producerService;
+        this.friendshipService = friendshipService;
     }
 
     @GetMapping("/api/home")
@@ -78,6 +80,9 @@ public class PostController {
         if (user.isEmpty()) return new ResponseEntity<>("Invalid User", HttpStatus.BAD_REQUEST);
         Optional<Post> post = postService.getPostById(commentDto.getPost_id());
         if (post.isEmpty()) return new ResponseEntity<>("Invalid PostID", HttpStatus.BAD_REQUEST);
+        Boolean is_friend = friendshipService.checkFriendship(user.get(), post.get().getUser());
+        if (!is_friend) return new ResponseEntity<>("Only Friends can comment on this post", HttpStatus.FORBIDDEN);
+
         Comment comment = new Comment();
         comment.setPost(post.get());
         comment.setCreatedAt(Timestamp.from(Instant.now()));
@@ -85,6 +90,8 @@ public class PostController {
         comment.setUser(user.get());
         postService.addComment(comment, commentDto.getPost_id());
         commentService.saveComment(comment);
+
+
         NotificationDto notification = new NotificationDto();
         notification.setNotificationType(NotificationType.COMMENT);
         notification.setComment_id(comment.getId());
