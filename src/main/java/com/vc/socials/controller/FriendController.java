@@ -146,20 +146,16 @@ public class FriendController {
             }
         }
         // make response notification here
-        NotificationDto notification = new NotificationDto();
-        if (response.equalsIgnoreCase(FriendshipStatus.ACCEPTED.name())) {
+        if (f.getStatus() == FriendshipStatus.ACCEPTED) {
+            NotificationDto notification = new NotificationDto();
             notification.setNotificationType(NotificationType.FRIEND_ACCEPTED);
-        } else {
-            notification.setNotificationType(NotificationType.FRIEND_REJECTED);
+            notification.setUser_id(f.getUser1().getId());
+            notification.setSender_id(f.getUser2().getId());
+            notification.setCreated_at(Timestamp.from(Instant.now()));
+            notification.set_read(false);
+            //send to kafka
+            producerService.sendNotification(notification);
         }
-        notification.setUser_id(f.getUser1().getId());
-        notification.setSender_id(f.getUser2().getId());
-        notification.setCreated_at(Timestamp.from(Instant.now()));
-        notification.set_read(false);
-//        notificationService.saveNotification(notification);
-        //send to kafka
-        producerService.sendNotification(notification);
-
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
