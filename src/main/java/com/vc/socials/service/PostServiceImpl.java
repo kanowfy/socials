@@ -4,23 +4,19 @@ import com.vc.socials.model.Comment;
 import com.vc.socials.model.Post;
 import com.vc.socials.model.User;
 import com.vc.socials.repository.PostRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class PostServiceImpl implements PostService{
+public class PostServiceImpl implements PostService {
     private PostRepository postRepository;
-    @Autowired
-    public PostServiceImpl(PostRepository postRepository){
+
+    public PostServiceImpl(PostRepository postRepository) {
         this.postRepository = postRepository;
     }
 

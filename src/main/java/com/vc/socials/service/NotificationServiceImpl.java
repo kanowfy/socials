@@ -3,7 +3,6 @@ package com.vc.socials.service;
 import com.vc.socials.model.Notification;
 import com.vc.socials.model.User;
 import com.vc.socials.repository.NotificationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -13,10 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class NotificationServiceImpl implements NotificationService{
+public class NotificationServiceImpl implements NotificationService {
     private NotificationRepository notificationRepository;
-    @Autowired
-    public NotificationServiceImpl(NotificationRepository notificationRepository){
+
+    public NotificationServiceImpl(NotificationRepository notificationRepository) {
         this.notificationRepository = notificationRepository;
     }
 

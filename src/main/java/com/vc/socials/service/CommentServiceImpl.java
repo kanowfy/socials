@@ -2,7 +2,6 @@ package com.vc.socials.service;
 
 import com.vc.socials.model.Comment;
 import com.vc.socials.repository.CommentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,12 +9,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class CommentServiceImpl implements CommentService{
+public class CommentServiceImpl implements CommentService {
     private CommentRepository commentRepository;
-    @Autowired
-    public CommentServiceImpl(CommentRepository commentRepository){
+
+    public CommentServiceImpl(CommentRepository commentRepository) {
         this.commentRepository = commentRepository;
     }
+
     @Override
     @Transactional
     public List<Comment> getComments() {

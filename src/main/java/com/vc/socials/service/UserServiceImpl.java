@@ -3,7 +3,6 @@ package com.vc.socials.service;
 import com.vc.socials.model.Post;
 import com.vc.socials.model.User;
 import com.vc.socials.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,10 +11,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository){
+
+    public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -36,7 +35,7 @@ public class UserServiceImpl implements UserService{
     public void addPost(Post post, Long Id) {
         User user = userRepository.findById(Id).get();
         List<Post> postList = user.getPosts();
-        if (postList == null){
+        if (postList == null) {
             postList = new ArrayList<>();
         }
         postList.add(post);

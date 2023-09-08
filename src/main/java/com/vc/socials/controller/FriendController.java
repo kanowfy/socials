@@ -13,6 +13,12 @@ import com.vc.socials.model.NotificationType;
 import com.vc.socials.service.FriendshipService;
 import com.vc.socials.service.KafkaProducerService;
 import com.vc.socials.service.UserService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +37,7 @@ import com.vc.socials.service.FriendSearchService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+@Tag(name = "friend", description = "friend API")
 @RestController
 public class FriendController {
     private UserService userService;
@@ -40,28 +47,21 @@ public class FriendController {
     private KafkaProducerService producerService;
 
     public FriendController(UserService userService, FriendshipService friendshipService,
-                            FriendSearchService friendSearchService, KafkaProducerService producerService) {
+            FriendSearchService friendSearchService, KafkaProducerService producerService) {
         this.userService = userService;
         this.friendshipService = friendshipService;
         this.friendSearchService = friendSearchService;
         this.producerService = producerService;
     }
 
-    @GetMapping("/api/friends/hello")
-    public ResponseEntity<String> sayHello(Principal principal) {
-        return new ResponseEntity<String>(principal.getName(), HttpStatus.OK);
-    }
-
+    @Operation(summary = "Send friend request to another user using ID")
+    @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Invalid ID supplied"),
+            @ApiResponse(responseCode = "400", description = "Friend record exists"),
+            @ApiResponse(responseCode = "201", description = "Friend request created") })
     @PostMapping("/api/friends/request")
-    public ResponseEntity<?> makeFriendRequest(@RequestBody FriendRequestDto friendRequestDto) {
-        Optional<User> user1 = userService.getUserById(friendRequestDto.getFromUserId());
+    public ResponseEntity<?> makeFriendRequest(@RequestBody FriendRequestDto friendRequestDto, Principal principal) {
+        Optional<User> user1 = userService.getUserByUserName(principal.getName());
         Optional<User> user2 = userService.getUserById(friendRequestDto.getToUserId());
-
-        if (!user1.isPresent()) {
-            return new ResponseEntity<String>(
-                    "User with id %d does not exist.".formatted(friendRequestDto.getFromUserId()),
-                    HttpStatus.BAD_REQUEST);
-        }
 
         if (!user2.isPresent()) {
             return new ResponseEntity<String>(
@@ -70,7 +70,7 @@ public class FriendController {
         }
 
         // check if friendship record exists between the 2 users
-        if (friendshipService.getFriendshipByUsersID(friendRequestDto.getFromUserId(), friendRequestDto.getToUserId())
+        if (friendshipService.getFriendshipByUsersID(user1.get().getId(), user2.get().getId())
                 .isPresent()) {
             return new ResponseEntity<String>("Friendship record already exists.", HttpStatus.BAD_REQUEST);
         }
@@ -89,14 +89,19 @@ public class FriendController {
         notification.setSender_id(user1.get().getId());
         notification.setCreated_at(Timestamp.from(Instant.now()));
         notification.set_read(false);
-//        notificationService.saveNotification(notification);
-        //send to kafka
+        // notificationService.saveNotification(notification);
+        // send to kafka
         producerService.sendNotification(notification);
 
         return new ResponseEntity<String>("Friend request created with id %d.".formatted(savedFriendship.getId()),
                 HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Respond to a friend request")
+    @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Invalid friendship ID"),
+            @ApiResponse(responseCode = "400", description = "Friend request already responded"),
+            @ApiResponse(responseCode = "403", description = "Can not respond to friend request of others"),
+            @ApiResponse(responseCode = "200", description = "Operation successful") })
     @PostMapping("/api/friends/response")
     public ResponseEntity<?> respondFriendRequest(@RequestBody FriendResponseDto friendResponseDto,
             Principal principal) {
@@ -156,13 +161,15 @@ public class FriendController {
         notification.setSender_id(f.getUser2().getId());
         notification.setCreated_at(Timestamp.from(Instant.now()));
         notification.set_read(false);
-//        notificationService.saveNotification(notification);
-        //send to kafka
+        // notificationService.saveNotification(notification);
+        // send to kafka
         producerService.sendNotification(notification);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @Operation(summary = "List all friends")
+    @ApiResponse(responseCode = "200", description = "Operation successful")
     @GetMapping("/api/friends/list")
     public ResponseEntity<List<UserDto>> listFriends(Principal principal) {
         User user = userService.getUserByUserName(principal.getName()).get();
@@ -195,6 +202,9 @@ public class FriendController {
         return new ResponseEntity<>(friends, HttpStatus.OK);
     }
 
+    @Operation(summary = "Search for friends")
+    @ApiResponses(value = { @ApiResponse(responseCode = "500", description = "Server error"),
+            @ApiResponse(responseCode = "200", description = "Operation successful") })
     @GetMapping("/api/friends/search")
     public ResponseEntity<List<UserDto>> searchForFriends(@RequestBody FriendSearchDto friendSearchDto,
             Principal principal) {

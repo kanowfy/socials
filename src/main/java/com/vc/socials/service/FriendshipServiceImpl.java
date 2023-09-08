@@ -4,19 +4,17 @@ import com.vc.socials.model.Friendship;
 import com.vc.socials.model.FriendshipStatus;
 import com.vc.socials.model.User;
 import com.vc.socials.repository.FriendshipRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class FriendshipServiceImpl implements FriendshipService{
+public class FriendshipServiceImpl implements FriendshipService {
     private FriendshipRepository friendshipRepository;
-    @Autowired
-    public FriendshipServiceImpl(FriendshipRepository friendshipRepository){
+
+    public FriendshipServiceImpl(FriendshipRepository friendshipRepository) {
         this.friendshipRepository = friendshipRepository;
     }
 
@@ -47,9 +45,12 @@ public class FriendshipServiceImpl implements FriendshipService{
     @Override
     public Boolean checkFriendship(User user1, User user2) {
         Optional<Friendship> f = friendshipRepository.findsByUsersId(user1.getId(), user2.getId());
-        if (f.isEmpty()) return false;
-        if (f.get().getStatus() == FriendshipStatus.PENDING) return false;
-        if (f.get().getStatus() == FriendshipStatus.REJECTED) return false;
+        if (f.isEmpty())
+            return false;
+        if (f.get().getStatus() == FriendshipStatus.PENDING)
+            return false;
+        if (f.get().getStatus() == FriendshipStatus.REJECTED)
+            return false;
         return true;
     }
 
