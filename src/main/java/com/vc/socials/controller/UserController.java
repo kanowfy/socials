@@ -27,8 +27,7 @@ public class UserController {
     }
 
     @Operation(summary = "Register an account")
-    @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Username already exists"),
-            @ApiResponse(responseCode = "400", description = "Email already exists"),
+    @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Username or email already exists"),
             @ApiResponse(responseCode = "201", description = "Successfully registered") })
     @SecurityRequirements()
     @PostMapping("/api/users/register")

@@ -55,7 +55,7 @@ public class FriendController {
     }
 
     @Operation(summary = "Send friend request to another user using ID")
-    @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Invalid ID supplied"),
+    @ApiResponses(value = { @ApiResponse(responseCode = "404", description = "Invalid ID supplied"),
             @ApiResponse(responseCode = "400", description = "Friend record exists"),
             @ApiResponse(responseCode = "201", description = "Friend request created") })
     @PostMapping("/api/friends/request")
@@ -66,7 +66,7 @@ public class FriendController {
         if (!user2.isPresent()) {
             return new ResponseEntity<String>(
                     "User with id %d does not exist.".formatted(friendRequestDto.getToUserId()),
-                    HttpStatus.BAD_REQUEST);
+                    HttpStatus.NOT_FOUND);
         }
 
         // check if friendship record exists between the 2 users
@@ -98,7 +98,7 @@ public class FriendController {
     }
 
     @Operation(summary = "Respond to a friend request")
-    @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Invalid friendship ID"),
+    @ApiResponses(value = { @ApiResponse(responseCode = "404", description = "Invalid friendship ID"),
             @ApiResponse(responseCode = "400", description = "Friend request already responded"),
             @ApiResponse(responseCode = "403", description = "Can not respond to friend request of others"),
             @ApiResponse(responseCode = "200", description = "Operation successful") })
@@ -110,7 +110,7 @@ public class FriendController {
         if (!friendship.isPresent()) {
             return new ResponseEntity<String>(
                     "Friendship record with id %d does not exist.".formatted(friendResponseDto.getFriendshipId()),
-                    HttpStatus.BAD_REQUEST);
+                    HttpStatus.NOT_FOUND);
         }
 
         Friendship f = friendship.get();
