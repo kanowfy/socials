@@ -31,36 +31,36 @@ public class PostController {
     private CommentService commentService;
 
     private KafkaProducerService producerService;
-
-    private NotificationService notificationService;
     private FriendshipService friendshipService;
 
     public PostController(PostService postService, UserService userService,
-            CommentService commentService, NotificationService notificationService,
+            CommentService commentService,
             KafkaProducerService producerService, FriendshipService friendshipService) {
         this.postService = postService;
         this.userService = userService;
         this.commentService = commentService;
-        this.notificationService = notificationService;
         this.producerService = producerService;
         this.friendshipService = friendshipService;
     }
 
     @Operation(summary = "Get all posts")
     @ApiResponse(responseCode = "200", description = "Operation successful")
-    @GetMapping("/api/home")
+    @GetMapping("/api/posts")
     public ResponseEntity<?> getPosts() {
         List<Post> postList = postService.getPosts();
         List<PostDto> postDtoList = post2Dto(postList);
         return new ResponseEntity<>(postDtoList, HttpStatus.OK);
     }
 
-    @GetMapping("/api/post/{post_id}")
-    public ResponseEntity<?> getPost(@PathVariable("post_id") Long post_id) {
+    @Operation(summary = "Get a post by ID")
+    @ApiResponses(value = { @ApiResponse(responseCode = "404", description = "Post not found"),
+            @ApiResponse(responseCode = "200", description = "Operation successful") })
+    @GetMapping("/api/posts/{id}")
+    public ResponseEntity<?> getPost(@PathVariable("id") Long postId) {
         List<Post> postList = new ArrayList<>();
-        Optional<Post> post = postService.getPostById(post_id);
+        Optional<Post> post = postService.getPostById(postId);
         if (post.isEmpty()) {
-            return null;
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         postList.add(post.get());
         List<PostDto> postDtoList = post2Dto(postList);
@@ -70,7 +70,7 @@ public class PostController {
     @Operation(summary = "Create a new post")
     @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Invalid user"),
             @ApiResponse(responseCode = "201", description = "Post created successfully") })
-    @PostMapping("/api/post/add")
+    @PostMapping("/api/posts")
     public ResponseEntity<?> createPost(@RequestBody PostDto postDto, Principal principal) {
         Optional<User> user = userService.getUserByUserName(principal.getName());
         if (user.isEmpty())
@@ -88,12 +88,12 @@ public class PostController {
     @ApiResponses(value = { @ApiResponse(responseCode = "400", description = "Invalid post ID"),
             @ApiResponse(responseCode = "403", description = "Can not comment on posts of a user that is not a friend"),
             @ApiResponse(responseCode = "201", description = "Comment added successfully") })
-    @PostMapping("/api/comment/add")
+    @PostMapping("/api/comments")
     public ResponseEntity<?> createComment(@RequestBody CommentDto commentDto, Principal principal) {
         Optional<User> user = userService.getUserByUserName(principal.getName());
         if (user.isEmpty())
             return new ResponseEntity<>("Invalid User", HttpStatus.BAD_REQUEST);
-        Optional<Post> post = postService.getPostById(commentDto.getPost_id());
+        Optional<Post> post = postService.getPostById(commentDto.getPostId());
         if (post.isEmpty())
             return new ResponseEntity<>("Invalid PostID", HttpStatus.BAD_REQUEST);
         Boolean is_friend = friendshipService.checkFriendship(user.get(), post.get().getUser());
@@ -105,15 +105,15 @@ public class PostController {
         comment.setCreatedAt(Timestamp.from(Instant.now()));
         comment.setContent(commentDto.getContent());
         comment.setUser(user.get());
-        postService.addComment(comment, commentDto.getPost_id());
+        postService.addComment(comment, commentDto.getPostId());
         commentService.saveComment(comment);
 
         NotificationDto notification = new NotificationDto();
         notification.setNotificationType(NotificationType.COMMENT);
-        notification.setComment_id(comment.getId());
-        notification.setCreated_at(Timestamp.from(Instant.now()));
-        notification.setUser_id(post.get().getUser().getId());
-        notification.set_read(false);
+        notification.setCommentId(comment.getId());
+        notification.setCreatedAt(Timestamp.from(Instant.now()));
+        notification.setUserId(post.get().getUser().getId());
+        notification.setRead(false);
         // notificationService.saveNotification(notification);
         // send to kafka
         producerService.sendNotification(notification);
@@ -127,11 +127,11 @@ public class PostController {
 
             for (Comment comment : post.getComments()) {
                 CommentDto commentDto = new CommentDto();
-                commentDto.setComment_id(comment.getId());
-                commentDto.setPost_id(comment.getPost().getId());
-                commentDto.setUser_id(comment.getUser().getId());
+                commentDto.setCommentId(comment.getId());
+                commentDto.setPostId(comment.getPost().getId());
+                commentDto.setUserId(comment.getUser().getId());
                 commentDto.setContent(comment.getContent());
-                commentDto.setCreated_at(comment.getCreatedAt());
+                commentDto.setCreatedAt(comment.getCreatedAt());
                 commentDtoList.add(commentDto);
             }
             postDtoList.add(new PostDto(post.getId(), post.getUser().getId(), post.getContent(), commentDtoList,

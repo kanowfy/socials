@@ -6,13 +6,19 @@ import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommentDto {
-    private Long comment_id;
-    private Long post_id;
-    private Long user_id;
+    @JsonProperty("comment_id")
+    private Long commentId;
+    @JsonProperty("post_id")
+    private Long postId;
+    @JsonProperty("user_id")
+    private Long userId;
     private String content;
-    private Timestamp created_at;
+    @JsonProperty("created_at")
+    private Timestamp createdAt;
 }

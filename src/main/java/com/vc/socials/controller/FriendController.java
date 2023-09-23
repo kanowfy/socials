@@ -85,10 +85,10 @@ public class FriendController {
         // make request notification here
         NotificationDto notification = new NotificationDto();
         notification.setNotificationType(NotificationType.FRIEND_REQUEST);
-        notification.setUser_id(user2.get().getId());
-        notification.setSender_id(user1.get().getId());
-        notification.setCreated_at(Timestamp.from(Instant.now()));
-        notification.set_read(false);
+        notification.setUserId(user2.get().getId());
+        notification.setSenderId(user1.get().getId());
+        notification.setCreatedAt(Timestamp.from(Instant.now()));
+        notification.setRead(false);
         // notificationService.saveNotification(notification);
         // send to kafka
         producerService.sendNotification(notification);
@@ -136,7 +136,6 @@ public class FriendController {
         }
 
         friendshipService.saveFriendship(f);
-        // TODO: save document to index here
         // save new friend document to index
         if (f.getStatus() == FriendshipStatus.ACCEPTED) {
             FriendDoc friendDoc = new FriendDoc();
@@ -157,11 +156,10 @@ public class FriendController {
         } else {
             notification.setNotificationType(NotificationType.FRIEND_REJECTED);
         }
-        notification.setUser_id(f.getUser1().getId());
-        notification.setSender_id(f.getUser2().getId());
-        notification.setCreated_at(Timestamp.from(Instant.now()));
-        notification.set_read(false);
-        // notificationService.saveNotification(notification);
+        notification.setUserId(f.getUser1().getId());
+        notification.setSenderId(f.getUser2().getId());
+        notification.setCreatedAt(Timestamp.from(Instant.now()));
+        notification.setRead(false);
         // send to kafka
         producerService.sendNotification(notification);
 

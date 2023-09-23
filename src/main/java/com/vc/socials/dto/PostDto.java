@@ -7,13 +7,18 @@ import lombok.NoArgsConstructor;
 import java.sql.Timestamp;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class PostDto {
-        private Long post_id;
-        private Long user_id;
+        @JsonProperty("postId")
+        private Long postId;
+        @JsonProperty("userId")
+        private Long userId;
         private String content;
         private List<CommentDto> comments;
-        private Timestamp created_at;
+        @JsonProperty("created_at")
+        private Timestamp createdAt;
 }

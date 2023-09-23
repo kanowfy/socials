@@ -3,7 +3,6 @@ package com.vc.socials.controller;
 import com.vc.socials.dto.NotificationDto;
 import com.vc.socials.model.*;
 import com.vc.socials.service.NotificationService;
-import com.vc.socials.service.PostService;
 import com.vc.socials.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,15 +65,15 @@ public class NotificationController {
         List<NotificationDto> notificationDtoList = new ArrayList<>();
         for (Notification notification : notificationList) {
             NotificationDto notificationDto = new NotificationDto();
-            notificationDto.setNotification_id(notification.getId());
-            notificationDto.setUser_id(notification.getUser().getId());
-            notificationDto.set_read(notification.getIsRead());
+            notificationDto.setNotificationId(notification.getId());
+            notificationDto.setUserId(notification.getUser().getId());
+            notificationDto.setRead(notification.getIsRead());
             notificationDto.setNotificationType(notification.getType());
-            notificationDto.setCreated_at(notification.getCreatedAt());
+            notificationDto.setCreatedAt(notification.getCreatedAt());
             if (notification.getType() == NotificationType.COMMENT) {
-                notificationDto.setComment_id(notification.getComment().getId());
+                notificationDto.setCommentId(notification.getComment().getId());
             } else {
-                notificationDto.setSender_id(notification.getSender().getId());
+                notificationDto.setSenderId(notification.getSender().getId());
             }
             notificationDtoList.add(notificationDto);
         }

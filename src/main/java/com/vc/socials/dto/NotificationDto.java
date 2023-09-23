@@ -1,5 +1,6 @@
 package com.vc.socials.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vc.socials.model.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,11 +11,17 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NotificationDto {
-    private Long notification_id;
-    private Long user_id;
+    @JsonProperty("notification_id")
+    private Long notificationId;
+    @JsonProperty("user_id")
+    private Long userId;
     private NotificationType notificationType;
-    private Long sender_id;
-    private Long comment_id;
-    private boolean is_read;
-    private Timestamp created_at;
+    @JsonProperty("sender_id")
+    private Long senderId;
+    @JsonProperty("comment_id")
+    private Long commentId;
+    @JsonProperty("is_read")
+    private boolean isRead;
+    @JsonProperty("created_at")
+    private Timestamp createdAt;
 }
